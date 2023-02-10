@@ -1,0 +1,3 @@
+/home/zhiqiang/segpc/psmalloc/build/CMakeFiles/rebuild_cache.dir
+/home/zhiqiang/segpc/psmalloc/build/CMakeFiles/edit_cache.dir
+/home/zhiqiang/segpc/psmalloc/build/CMakeFiles/demo.dir
