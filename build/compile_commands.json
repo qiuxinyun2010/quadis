@@ -1,7 +1,0 @@
-[
-{
-  "directory": "/home/zhiqiang/segpc/psmalloc/build",
-  "command": "/usr/bin/g++-8    -g   -o CMakeFiles/demo.dir/main.cpp.o -c /home/zhiqiang/segpc/psmalloc/main.cpp",
-  "file": "/home/zhiqiang/segpc/psmalloc/main.cpp"
-}
-]

@@ -1,0 +1,26 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../include/psmalloc.h
+iostream
+-
+string.h
+-
+
+/home/zhiqiang/segpc/psmalloc/src/psmalloc.cpp
+psmalloc.h
+-
+fcntl.h
+-
+sys/stat.h
+-
+sys/mman.h
+-
+unistd.h
+-
+

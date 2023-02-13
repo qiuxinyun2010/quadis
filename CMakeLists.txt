@@ -1,2 +1,4 @@
+cmake_minimum_required (VERSION 3.0)
 project(psmallocDemo)
-add_executable(main main.cpp)
+include_directories(include)
+add_executable(main src/psmalloc.cpp src/main.cpp)
