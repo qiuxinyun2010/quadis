@@ -1,2 +1,2 @@
 project(psmallocDemo)
-add_executable(demo main.cpp)
+add_executable(main main.cpp)
