@@ -1,1 +1,1 @@
-(cd build && cmake .. && cmake --build . && ./main)
+(cd build && cmake .. && cmake --build . && ./test)

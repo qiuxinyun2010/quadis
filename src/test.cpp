@@ -1,168 +1,156 @@
-#include <iostream>
-#include "psmalloc.c"
-#include <unordered_map>
-#include <sys/mman.h> 
-#include <sys/stat.h> 
-#include <fcntl.h>
+// #include <psmalloc.h>
 #include <stdio.h>
-
-#define PAGE_MAGIC  9627
-#define DEFAULT_CHUNK_NUM  5
-
-struct pageHeader{
-    short magic;
-    short chunkSize;
-    int freeChunkOffset;
-    int pageSize;
-};
-pageHeader* InitPage(const char *filename, int chunkSize, int chunkNum);
-int ExtendPage(const char *filename);
-std:: unordered_map<const char *,intptr_t> pageFdSet;
-
-// intptr_t alloc(const char *filename, size_t inSize) {
-//     uint64_t returnPtr = 0;
-
-//     FILE *fd;
-//     if(!pageFdSet.count(filename) || pageFdSet[filename]==NULL){
-//         printf("add page %s \n",filename);
-//         fd = fopen (filename, "r+b");
-//         pageFdSet[filename] = fd;
-//     }
-    
-// }
-
-void closeAllPages(){
-    for(const std::pair<const char *,intptr_t> & kv:pageFdSet){
-        munmap((void*)kv.second,((pageHeader*)kv.second)->pageSize);
-        // close(kv.second);
+#include <fcntl.h>
+#include <sys/stat.h> 
+#include <sys/mman.h> 
+#include <unistd.h>
+#include <string.h>
+#include <psmallocv2.h>
+bool write_to_page(){
+    const char* filepath = "good.pg.0";
+    int fd = open (filepath, O_RDWR+O_CREAT,S_IREAD+S_IWRITE);
+    if (fd == -1) {
+        printf("can not open the file %s\n",filepath);
+        return false;
     }
+    int page_size = 128;
+    ftruncate(fd,page_size);
+    void* ptr = mmap(NULL, page_size, PROT_READ | PROT_WRITE,MAP_SHARED, fd, 0);
+    // printf("%p\n",ptr);
+    if(ptr== MAP_FAILED){
+        perror("mmap");
+        close(fd);
+        return false;
+    }
+    close(fd);
+    char * s = "我爱你";
+    memcpy(ptr,s,11);
+    munmap(ptr, page_size);
+    return true;
 }
 
+void read_page(){
+    FILE* fp;
 
-void CreatePage(const char *filename, short chunkSize){
-    FILE *fp;
-    fp = fopen (filename, "wb");
-    if (fp == NULL) {
+    fp = fopen("test.entry" , "r");
+    if(fp == NULL) {
+        perror("打开文件时发生错误");
         return;
     }
-    struct pageHeader ph = {PAGE_MAGIC,chunkSize,16};
-    fwrite (&ph, 16, 1, fp);
-}
-int chunkSizes[] = {16,32,64,128,256,512,1024,2048};
-inline int roundByte(int size) {
-  for(int i=0;i<8;i++){
-    if(size<chunkSizes[i]) {
-        return chunkSizes[i];
+    // int len = 0;
+    int i = 0;
+
+    // 1234\r\n\0 7
+    char current_line[100] = {0};
+    while (fgets(current_line, sizeof(current_line), fp) != NULL)
+    {
+        current_line[strlen(current_line)-1] = '\0';
+    	printf("%s-%d\n",current_line,strlen(current_line));
     }
-  }
-  return size;
+    fclose(fp);
+    return ;
 }
-void* psmalloc(const char *filename, size_t size){
-    int chunkSize = round_byte(size);
-    pageHeader* phPtr;
-    if(!pageFdSet.count(filename)){
-        phPtr = InitPage(filename,chunkSize,DEFAULT_CHUNK_NUM);
+void test_write_1(){
+    Allocator* allocator = new Allocator("test");
+    printf("init page_name:%s entry_path:%s \n",allocator->page_name,allocator->page_entry_path); 
+
+    /*test write data*/
+    for(int i=0;i<8;i++){
+        char* ptr = (char*)allocator->psmalloc(13);
+        if(!ptr){
+            printf("psmalloc failed\n");
+            exit(EXIT_FAILURE);
+        }
+        ptr[0] = '0'+i;
     }
-    intptr_t ptr = (intptr_t)phPtr + phPtr->freeChunkOffset;
-    phPtr->freeChunkOffset = *(intptr_t*)ptr;
-    return (void*)ptr;
+    // throw -1;
+    // exit(EXIT_SUCCESS);
+    delete allocator;
 }
+
+void test_free_2(){
+    Allocator* allocator = new Allocator("test");
+    printf("init page_name:%s entry_path:%s \n",allocator->page_name,allocator->page_entry_path); 
+    for(int i=0;i<8;i++){
+        char* ptr = (char*)allocator->psmalloc(13);
+        if(!ptr){
+            printf("psmalloc failed\n");
+            exit(EXIT_FAILURE);
+        }
+        ptr[0] = '0'+i;
+        if(i%2)
+        allocator->psfree(ptr);
+    }
+    
+}
+void test_free_1(){
+    Allocator* allocator = new Allocator("test");
+    printf("init page_name:%s entry_path:%s \n",allocator->page_name,allocator->page_entry_path); 
+
+    allocator->psfree(1,0x40);
+}
+void test_psmalloc_1(){
+    Allocator* allocator = new Allocator("test");
+    printf("init page_name:%s entry_path:%s \n",allocator->page_name,allocator->page_entry_path); 
+
+    /*test write data*/
+    for(int i=0;i<8;i++){
+        char* ptr = (char*)allocator->psmalloc(12);
+        if(!ptr){
+            printf("psmalloc failed\n");
+            exit(EXIT_FAILURE);
+        }
+        ptr[0] = '0'+i;
+    }
+
+    /*test page index*/
+    printf("%d\n", allocator->cur_page_id);
+    printf("%p %p\n", allocator->page_index[allocator->cur_page_id]->ph, allocator->page_list[0]->ph);
+
+    /*test map and unmap page*/
+    printf("%c\n", *(char*)(allocator->ptr(allocator->cur_page_id, 16)));
+    allocator->unmap_page(allocator->page_index[allocator->cur_page_id]);
+    allocator->map_page(allocator->page_index[allocator->cur_page_id]);
+    printf("%c\n", *(char*)(allocator->ptr(allocator->cur_page_id, 16)));
+    /*test extend page_index*/
+    // printf("%d %p %p\n", *((intptr_t*)allocator->page_index-1), allocator->page_index, (allocator->page_index[1])); 
+    // allocator->max_page_id*=2;
+    // allocator->page_index = (page**)realloc(allocator->page_index,allocator->max_page_id*sizeof(page*));
+    // printf("%d %p %p\n", *((intptr_t*)allocator->page_index-1), allocator->page_index, (allocator->page_index[1])); 
+}
+class A{
+public:
+    int a;
+    A(){
+        printf("Construct\n");
+        a = 1;
+        this->~A();
+    }
+
+    ~A(){
+         printf("DConstruct\n");
+    }
+};
 int main(){
-    printf("hello\n");
-    // void* ptr = xxmalloc(20);
+    // A* a = new A();
+    // printf("%d\n", a->a);
+    // delete a;
+    // write_to_page();
+    // read_page();
+    // page_header ph = {PAGE_MAGIC,CHUNK_SIZE[0],PAGE_SIZE,CHUNK_SIZE[0]};
+    // printf("%d \n",sizeof(ph));
+    // test_psmalloc_1();
+    // test_write_1();
+
+    test_free_2();
+    // test_free_1();
+    // test_write_1();
+
+    // char* ptr = (char*)malloc(100000000001);
     // printf("%p\n",ptr);
-    // void* ptr2 = xxmalloc(20);
-    // printf("%p\n",ptr2);
-    // int* x = new(ptr) int(2);
-    // printf("%p\n",x);
-    // printf("%d\n",*(int*)ptr);
-    // alloc("test.page",20);
-    struct pageHeader ph = {PAGE_MAGIC,32,32,32*5};
-    printf("%lu \n",sizeof(ph));
-    int* ptr = (int*)psmalloc("test.p",12);
-    printf("%p\n",ptr);
-    ptr[0] = 9;
-    // InitPage("test.p",32,5);
-    // ExtendPage("test.p");
-    // closeAllPages();
-    
-}
-unsigned char initalPointers[24] = { 96,27 };
-int ExtendPage(const char *filename){
-    // ftruncate(fd,pageSize);
-    int fd = open (filename, O_RDWR);
-    if (fd == -1) {
-        printf("can not open the file %s\n",filename);
-        return -1;
-    }
-    if(!pageFdSet.count(filename)){
-        return -1;
-    }
-
-    pageHeader* phPtr = (pageHeader*)pageFdSet[filename];
-    if(phPtr->magic != PAGE_MAGIC){
-        printf("PAGE_MAGIC ERROR %s\n",filename);
-        return -1;
-    }
-
-    int pageSize = phPtr->pageSize;
-    int chunkSize = phPtr->chunkSize;
-
-    munmap(phPtr,pageSize);
-    ftruncate(fd,pageSize*2);
-
-    phPtr = (pageHeader*)mmap(NULL, pageSize*2, PROT_READ | PROT_WRITE,MAP_SHARED, fd, 0);
-    if(phPtr == MAP_FAILED){
-        perror("MAP_FAILED");
-    }
-    close(fd);
-    phPtr->pageSize = pageSize*2;
-    phPtr->freeChunkOffset = pageSize;
-    intptr_t chunkCurrent = pageSize;
-    intptr_t chunkNext = chunkCurrent + chunkSize;
-    for (int chunk_index = 0; chunk_index < (pageSize / chunkSize) - 1; chunk_index++) {
-        *(intptr_t*)(chunkCurrent+(intptr_t)phPtr) = chunkNext;
-        chunkCurrent += chunkSize;
-        chunkNext += chunkSize;
-    }                                                                                            
-    // // write the last chunk of page
-    *(intptr_t*)(chunkCurrent+(intptr_t)phPtr) = 0;
-    return 0;
-}
-pageHeader* InitPage(const char *filename, int chunkSize, int chunkNum) {
-    int fd = open (filename, O_RDWR+O_CREAT,S_IREAD+S_IWRITE);
-    if (fd == -1) {
-        printf("can not open the file %s\n",filename);
-        return nullptr;
-    }
-    int pageSize = chunkSize*chunkNum;
-    ftruncate(fd,pageSize);
-    pageHeader* ptr = (pageHeader*)mmap(NULL, pageSize, PROT_READ | PROT_WRITE,MAP_SHARED, fd, 0);
-    printf("%p\n",ptr);
-    if(ptr == MAP_FAILED){
-        perror("mmap");
-    }
-    close(fd);
-
-    ptr->magic = PAGE_MAGIC;
-    ptr->chunkSize = chunkSize;
-    ptr->freeChunkOffset = chunkSize;
-    ptr->pageSize = pageSize;
-    // struct pageHeader ph = {pageMagic,chunkSize,16};
-    // printf("magic %d\n",ptr->magic);
-
-    intptr_t chunkCurrent = chunkSize;
-    intptr_t chunkNext = chunkCurrent + chunkSize;
-
-    for (int chunk_index = 0; chunk_index<chunkNum - 2; chunk_index++) {
-        *(intptr_t*)(chunkCurrent+(intptr_t)ptr) = chunkNext;
-        chunkCurrent += chunkSize;
-        chunkNext += chunkSize;
-    }                                                                                            
-    // // write the last chunk of page
-    *(intptr_t*)(chunkCurrent+(intptr_t)ptr) = 0;
-    
-    // munmap(ptr,pageSize);
-    // pageFdSet[filename] = (intptr_t)ptr;
-    return ptr;
+    // ptr[100000000000] = 'a';
+    // printf("%c %p\n", ptr[100000000000], &ptr[100000000000]);
+    // Allocator* allocator = new Allocator("test");
+    // page_header ph;
+    // printf("%d\n", sizeof(ph));
 }

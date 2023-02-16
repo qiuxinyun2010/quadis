@@ -12,7 +12,7 @@ bool PageAllocator::create(int chunk_size, int chunk_num=DEFAULT_CHUNK_NUM){
     }
     int page_size = chunk_size*chunk_num;
     ftruncate(fd,page_size);
-    this->ph = (page_header*)mmap(NULL, page_size, PROT_READ | PROT_WRITE,MAP_SHARED, fd, 0);
+    this->ph = (page_head*)mmap(NULL, page_size, PROT_READ | PROT_WRITE,MAP_SHARED, fd, 0);
     // printf("%p\n",ptr);
     if(this->ph == MAP_FAILED){
         perror("mmap");
@@ -63,7 +63,7 @@ bool PageAllocator::init(){
     }
     
     size_t page_size = get_file_size(filepath);
-    ph = (page_header*)mmap(NULL, page_size, PROT_READ | PROT_WRITE,MAP_SHARED, fd, 0);
+    ph = (page_head*)mmap(NULL, page_size, PROT_READ | PROT_WRITE,MAP_SHARED, fd, 0);
     if(ph == MAP_FAILED){
         perror("mmap");
         close(fd);
@@ -124,9 +124,11 @@ bool PageAllocator::extend()
     }
     ftruncate(fd,page_size*2);
     
-    ph = (page_header*)mmap(NULL, page_size*2, PROT_READ | PROT_WRITE,MAP_SHARED, fd, 0);
+    ph = (page_head*)mmap(NULL, page_size*2, PROT_READ | PROT_WRITE,MAP_SHARED, fd, 0);
     if(ph == MAP_FAILED){
+        //TODO: 内存不足时，page回收策略
         perror("MAP_FAILED: ");
+        close(fd);
         return false;
     }
     close(fd);
@@ -146,7 +148,7 @@ bool PageAllocator::extend()
     return true;
 }
 
-void* PageAllocator::malloc(size_t size)
+void* PageAllocator::psmalloc(size_t size)
 {
     if(size > ph->chunk_size) {
         printf("ERROR: allocate size %d > the chunk_size % d\n",size,ph->chunk_size);

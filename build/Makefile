@@ -111,71 +111,71 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named main
+# Target rules for targets named test
 
 # Build rule for target.
-main: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 main
-.PHONY : main
+test: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 test
+.PHONY : test
 
 # fast build rule for target.
-main/fast:
-	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/build
-.PHONY : main/fast
+test/fast:
+	$(MAKE) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/build
+.PHONY : test/fast
 
-src/main.o: src/main.cpp.o
+src/psmallocv2.o: src/psmallocv2.cpp.o
 
-.PHONY : src/main.o
-
-# target to build an object file
-src/main.cpp.o:
-	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/main.cpp.o
-.PHONY : src/main.cpp.o
-
-src/main.i: src/main.cpp.i
-
-.PHONY : src/main.i
-
-# target to preprocess a source file
-src/main.cpp.i:
-	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/main.cpp.i
-.PHONY : src/main.cpp.i
-
-src/main.s: src/main.cpp.s
-
-.PHONY : src/main.s
-
-# target to generate assembly for a file
-src/main.cpp.s:
-	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/main.cpp.s
-.PHONY : src/main.cpp.s
-
-src/psmalloc.o: src/psmalloc.cpp.o
-
-.PHONY : src/psmalloc.o
+.PHONY : src/psmallocv2.o
 
 # target to build an object file
-src/psmalloc.cpp.o:
-	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/psmalloc.cpp.o
-.PHONY : src/psmalloc.cpp.o
+src/psmallocv2.cpp.o:
+	$(MAKE) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/psmallocv2.cpp.o
+.PHONY : src/psmallocv2.cpp.o
 
-src/psmalloc.i: src/psmalloc.cpp.i
+src/psmallocv2.i: src/psmallocv2.cpp.i
 
-.PHONY : src/psmalloc.i
+.PHONY : src/psmallocv2.i
 
 # target to preprocess a source file
-src/psmalloc.cpp.i:
-	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/psmalloc.cpp.i
-.PHONY : src/psmalloc.cpp.i
+src/psmallocv2.cpp.i:
+	$(MAKE) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/psmallocv2.cpp.i
+.PHONY : src/psmallocv2.cpp.i
 
-src/psmalloc.s: src/psmalloc.cpp.s
+src/psmallocv2.s: src/psmallocv2.cpp.s
 
-.PHONY : src/psmalloc.s
+.PHONY : src/psmallocv2.s
 
 # target to generate assembly for a file
-src/psmalloc.cpp.s:
-	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/psmalloc.cpp.s
-.PHONY : src/psmalloc.cpp.s
+src/psmallocv2.cpp.s:
+	$(MAKE) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/psmallocv2.cpp.s
+.PHONY : src/psmallocv2.cpp.s
+
+src/test.o: src/test.cpp.o
+
+.PHONY : src/test.o
+
+# target to build an object file
+src/test.cpp.o:
+	$(MAKE) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/test.cpp.o
+.PHONY : src/test.cpp.o
+
+src/test.i: src/test.cpp.i
+
+.PHONY : src/test.i
+
+# target to preprocess a source file
+src/test.cpp.i:
+	$(MAKE) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/test.cpp.i
+.PHONY : src/test.cpp.i
+
+src/test.s: src/test.cpp.s
+
+.PHONY : src/test.s
+
+# target to generate assembly for a file
+src/test.cpp.s:
+	$(MAKE) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/test.cpp.s
+.PHONY : src/test.cpp.s
 
 # Help Target
 help:
@@ -185,13 +185,13 @@ help:
 	@echo "... depend"
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
-	@echo "... main"
-	@echo "... src/main.o"
-	@echo "... src/main.i"
-	@echo "... src/main.s"
-	@echo "... src/psmalloc.o"
-	@echo "... src/psmalloc.i"
-	@echo "... src/psmalloc.s"
+	@echo "... test"
+	@echo "... src/psmallocv2.o"
+	@echo "... src/psmallocv2.i"
+	@echo "... src/psmallocv2.s"
+	@echo "... src/test.o"
+	@echo "... src/test.i"
+	@echo "... src/test.s"
 .PHONY : help
 
 

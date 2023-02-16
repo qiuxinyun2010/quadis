@@ -12,7 +12,7 @@ typedef struct {
     short chunk_size;
     int page_size;
     int free_chunk_offset;
-} page_header;
+} page_head;
 
 class PageAllocator
 {
@@ -33,11 +33,11 @@ public:
     bool init();
     void close_page();
     bool extend();
-    void* malloc(size_t size);
+    void* psmalloc(size_t size);
     void free(void* ptr);
 public:
     // int fd;
-    page_header *ph;
+    page_head *ph;
     char filepath[MAX_PATH];
     bool is_mapped;
 };
