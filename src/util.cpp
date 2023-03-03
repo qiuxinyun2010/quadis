@@ -68,3 +68,12 @@ char *stringFromLongLong(long long value) {
     s[len] = '\0';
     return s;
 }
+
+ps_ptr ps_strcpy(const char* s) {
+    if(!s) return 0;
+    // printf("ps_str:%s\n",s);
+    ps_ptr ps_str = psmalloc(strlen(s)+1);
+    // printf("ps_str:%lu %lu\n", PAGE_ID(ps_str), PAGE_OFFSET(ps_str));
+    strcpy((char*)void_ptr(ps_str), s);
+    return ps_str;
+}

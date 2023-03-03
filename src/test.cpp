@@ -29,6 +29,7 @@ void test_dict_release() ;
 void test_zsl_create_and_release();
 void test_zsl_insert_delete();
 void test_zsl_create();
+void test_zsl_update_score();
 int main() {
     printf("init page ok:%d\n",init_page_manager("test.entry"));
     // page* pg = (page*)calloc(1,sizeof(page));
@@ -53,17 +54,41 @@ int main() {
     // test_dict_random();
 
     
-    test_zsl_insert_delete();
+    test_zsl_update_score();
 
+}
+void test_zsl_update_score(){
+    zskiplist* zsl = zslLoad("zsl.meta");
+    ps_ptr ps_zn;
+    char* s;
+    long count = 1000;
+    start_benchmark();
+    for(int i=0;i<count;i++){
+        s = stringFromLongLong(i+1);
+        ps_zn = zslInsert(zsl,i+1,s);
+        free(s);
+    }
+
+    printf("header:%lu %lu, length:%ld, level:%d\n",PAGE_ID(zsl->header),PAGE_OFFSET(zsl->header),zsl->length,zsl->level);
+    for(int i=0;i<count;i++){      
+        zslUpdateScore(zsl,i+1,stringFromLongLong(i+1),i+1001);
+    }
+    
+    end_benchmark("Update score");
+    printf("header:%lu %lu, length:%ld, level:%d\n",PAGE_ID(zsl->header),PAGE_OFFSET(zsl->header),zsl->length,zsl->level);
 }
 void test_zsl_insert_delete() {
     zskiplist* zsl = zslLoad("zsl.meta");
-    ps_ptr ps_s1, ps_zn;
-    long count = 1000000;
+    printf("test_zsl_insert_delete\n");
+    ps_ptr ps_zn;
+    char* s;
+    long count = 1;
     start_benchmark();
     for(int i=0;i<count;i++){
-        ps_s1 = ps_stringFromLongLong(i+1);
-        ps_zn = zslInsert(zsl,i+1,ps_s1);
+        s = stringFromLongLong(i+1);
+        // printf("%s\n",s);
+        ps_zn = zslInsert(zsl,i+1,s);
+        free(s);
         // zslDelete(zsl,i+1,stringFromLongLong(i+1),NULL);
     }
 
@@ -99,15 +124,16 @@ void test_zsl_create_and_release(){
     // zsl = (zskiplist*)void_ptr(ps_zsl);
     // printf("header:%lu %lu, length:%ld, level:%d\n",PAGE_ID(zsl->header),PAGE_OFFSET(zsl->header),zsl->length,zsl->level);
 
-    ps_ptr ps_s1;
+    char* s;
     // zskiplistNode* zn ;
     ps_ptr ps_zn;
     start_benchmark();
     long count = 10;
     for(int i=0;i<count;i++){
-        ps_s1 = ps_stringFromLongLong(i+1);
-        ps_zn = zslInsert(zsl,i+1,ps_s1);
+        s = stringFromLongLong(i+1);
+        ps_zn = zslInsert(zsl,i+1,s);
         zslFreeNode(ps_zn);
+        free(s);
     }
     end_benchmark("Inserting");
     printf("header:%lu %lu, length:%ld, level:%d\n",PAGE_ID(zsl->header),PAGE_OFFSET(zsl->header),zsl->length,zsl->level);

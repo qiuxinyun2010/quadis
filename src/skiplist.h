@@ -50,7 +50,8 @@ zskiplist* zslLoad(const char* path);
 void zslFreeNode(ps_ptr node);
 void zslFree(ps_ptr ps_zsl);
 int zslRandomLevel(void);
-ps_ptr zslInsert(ps_ptr ps_zsl, double score, ps_ptr ele);
-ps_ptr zslInsert(zskiplist *zsl, double score, ps_ptr ele);
+ps_ptr zslInsert(ps_ptr ps_zsl, double score, const char* ele);
+ps_ptr zslInsert(zskiplist *zsl, double score, const char* ele);
 int zslDelete(zskiplist *zsl, double score, const char* ele, zskiplistNode **node);
+ps_ptr zslUpdateScore(zskiplist *zsl, double curscore, const char* ele, double newscore);
 #endif

@@ -8,18 +8,20 @@
 #include <fcntl.h>
 #include <unistd.h> 
 
+#define ZSL_NODE(x) (zskiplistNode *)void_ptr(x)
 /* Create a skiplist node with the specified number of levels.
  * The SDS string 'ele' is referenced by the node after the call. */
-ps_ptr zslCreateNode(int level, double score, ps_ptr ele) {
+ps_ptr zslCreateNode(int level, double score, const char* ele) {
     #ifdef PRINT_DEBUG
     printf("[DEBUG] level:%d\n", level);
     #endif
     ps_ptr ps_zn;
     // 
     ps_zn = psmalloc(sizeof(zskiplistNode)+level*sizeof(struct zskiplistLevel));
-    zskiplistNode *zn = (zskiplistNode *)void_ptr(ps_zn);
+    zskiplistNode *zn = ZSL_NODE(ps_zn);
     zn->score = score;
-    zn->ele = ele;
+
+    zn->ele = ps_strcpy(ele);
     return ps_zn;
 }
 
@@ -33,9 +35,10 @@ static zskiplist* _zslCreate(const char* path) {
     zskiplist* zsl = (zskiplist *)void_ptr(ps_zsl);
     zsl->level = 1;
     zsl->length = 0;
-    zsl->header = zslCreateNode(ZSKIPLIST_MAXLEVEL,0,0);
 
-    zskiplistNode *header = (zskiplistNode *)void_ptr(zsl->header);
+    zsl->header = zslCreateNode(ZSKIPLIST_MAXLEVEL,0,nullptr);
+
+    zskiplistNode *header = ZSL_NODE(zsl->header);
 
     for (int j = 0; j < ZSKIPLIST_MAXLEVEL; j++) {
         header->level[j].forward = 0;
@@ -85,9 +88,9 @@ ps_ptr zslCreate(void) {
     // zsl = zmalloc(sizeof(*zsl));
     zsl->level = 1;
     zsl->length = 0;
-    zsl->header = zslCreateNode(ZSKIPLIST_MAXLEVEL,0,0);
-    zskiplistNode *header = (zskiplistNode *)void_ptr(zsl->header);
-
+    zsl->header = zslCreateNode(ZSKIPLIST_MAXLEVEL,0,nullptr);
+    // zskiplistNode *header = ZSL_NODE(zsl->header);
+    zskiplistNode *header = ZSL_NODE(zsl->header);
     for (j = 0; j < ZSKIPLIST_MAXLEVEL; j++) {
         header->level[j].forward = 0;
         header->level[j].span = 0;
@@ -105,7 +108,7 @@ ps_ptr zslCreate(void) {
  * this function. */
 void zslFreeNode(ps_ptr node) {
 
-    zskiplistNode* zn = (zskiplistNode *)void_ptr(node);
+    zskiplistNode* zn = ZSL_NODE(node);
     psfree(zn->ele);
     psfree(node);
     // sdsfree(node->ele);
@@ -115,12 +118,12 @@ void zslFreeNode(ps_ptr node) {
 /* Free a whole skiplist. */
 void zslFree(ps_ptr ps_zsl) {
     zskiplist* zsl = (zskiplist *)void_ptr(ps_zsl);
-    zskiplistNode *header = (zskiplistNode *)void_ptr(zsl->header), *node;
+    zskiplistNode *header = ZSL_NODE(zsl->header), *node;
     ps_ptr ps_node = header->level[0].forward, ps_next;
 
     psfree(zsl->header);
     while(ps_node) {
-        node = (zskiplistNode *)void_ptr(ps_node);
+        node = ZSL_NODE(ps_node);
         ps_next = node->level[0].forward;
         zslFreeNode(ps_node);
         ps_node = ps_next;
@@ -143,11 +146,11 @@ int zslRandomLevel(void) {
 /* Insert a new node in the skiplist. Assumes the element does not already
  * exist (up to the caller to enforce that). The skiplist takes ownership
  * of the passed SDS string 'ele'. */
-ps_ptr zslInsert(ps_ptr ps_zsl, double score, ps_ptr ele) {
+ps_ptr zslInsert(ps_ptr ps_zsl, double score, const char* ele) {
 
     return zslInsert((zskiplist *)void_ptr(ps_zsl),score,  ele);
 }
-ps_ptr zslInsert(zskiplist *zsl, double score, ps_ptr ele) {
+ps_ptr zslInsert(zskiplist *zsl, double score, const char* ele) {
     zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x, *forward, *header;
     ps_ptr ps_x, ps_backward;
     unsigned long rank[ZSKIPLIST_MAXLEVEL];
@@ -155,20 +158,23 @@ ps_ptr zslInsert(zskiplist *zsl, double score, ps_ptr ele) {
 
     assert(!isnan(score));
     ps_x = zsl->header;
-    header = (zskiplistNode *)void_ptr(zsl->header);
+    // header = ZSL_NODE(zsl->header);
+    header = ZSL_NODE(zsl->header);
     for (i = zsl->level-1; i >= 0; i--) {
         /* store rank that is crossed to reach the insert position */
         rank[i] = i == (zsl->level-1) ? 0 : rank[i+1];
         while(ps_x){
-            x = (zskiplistNode *)void_ptr(ps_x);
+            // x = ZSL_NODE(ps_x);
+            x = ZSL_NODE(ps_x);
             if(i==0) ps_backward = ps_x;
 
             if(x->level[i].forward==0) break;
-            forward = (zskiplistNode *)void_ptr(x->level[i].forward);
+            forward = ZSL_NODE(x->level[i].forward);
+            // forward = ZSL_NODE(x->level[i].forward);
 
             if(forward->score >= score) break;
 
-            if(forward->score == score && strcmp((char*)void_ptr(forward->ele),(char*)void_ptr(ele)) >= 0) break;
+            if(forward->score == score && strcmp((char*)void_ptr(forward->ele),ele) >= 0) break;
 
             rank[i] += x->level[i].span;
 
@@ -193,7 +199,7 @@ ps_ptr zslInsert(zskiplist *zsl, double score, ps_ptr ele) {
     }
     ps_x = zslCreateNode(level,score,ele);
     for (i = 0; i < level; i++) {
-        x = (zskiplistNode *)void_ptr(ps_x);
+        x = ZSL_NODE(ps_x);
         x->level[i].forward = update[i]->level[i].forward;
         update[i]->level[i].forward = ps_x;
 
@@ -212,7 +218,7 @@ ps_ptr zslInsert(zskiplist *zsl, double score, ps_ptr ele) {
     #endif
     x->backward = (ps_backward == zsl->header) ? 0 : ps_backward;
     if (x->level[0].forward) {
-        ((zskiplistNode *)void_ptr(x->level[0].forward))->backward = ps_x;
+        (ZSL_NODE(x->level[0].forward))->backward = ps_x;
     } else {
         zsl->tail = ps_x;
     }
@@ -226,7 +232,7 @@ ps_ptr zslInsert(zskiplist *zsl, double score, ps_ptr ele) {
  * zslDeleteRangeByRank. */
 void zslDeleteNode(zskiplist *zsl, ps_ptr ps_x, zskiplistNode **update) {
     int i;
-    zskiplistNode *x = (zskiplistNode *)void_ptr(ps_x);
+    zskiplistNode *x = ZSL_NODE(ps_x);
     for (i = 0; i < zsl->level; i++) {
         if (update[i]->level[i].forward == ps_x) {
             update[i]->level[i].span += x->level[i].span - 1;
@@ -236,11 +242,12 @@ void zslDeleteNode(zskiplist *zsl, ps_ptr ps_x, zskiplistNode **update) {
         }
     }
     if (x->level[0].forward) {
-        ((zskiplistNode *)void_ptr(x->level[0].forward))->backward = x->backward;
+        (ZSL_NODE(x->level[0].forward))->backward = x->backward;
     } else {
         zsl->tail = x->backward;
     }
-    zskiplistNode * header = (zskiplistNode *)void_ptr(zsl->header);
+    // zskiplistNode * header = ZSL_NODE(zsl->header);
+    zskiplistNode * header = ZSL_NODE(zsl->header);
     while(zsl->level > 1 && header->level[zsl->level-1].forward == 0)
         zsl->level--;
     zsl->length--;
@@ -261,27 +268,20 @@ int zslDelete(zskiplist *zsl, double score, const char* ele, zskiplistNode **nod
 
     ps_x = zsl->header;
     
-    x = (zskiplistNode *)void_ptr(ps_x);
+    x = ZSL_NODE(ps_x);
 
     for (i = zsl->level-1; i >= 0; i--) {
         // ps_forward = x->level[i].forward;
         
         while(x->level[i].forward){
-            forward = (zskiplistNode *)void_ptr(x->level[i].forward);
+            forward = ZSL_NODE(x->level[i].forward);
+
             if(forward->score >= score) break; 
             if(forward->score == score && strcmp((char*)void_ptr(forward->ele),ele) >= 0 ) break;
             
             // ps_forward = forward->level[i].forward;
             x = forward;
         }
-  
-        // while (x->level[i].forward &&
-        //         (x->level[i].forward->score < score ||
-        //             (x->level[i].forward->score == score &&
-        //              sdscmp(x->level[i].forward->ele,ele) < 0)))
-        // {
-        //      x = x->level[i].forward;
-        // }
         update[i] = x;
         
         #ifdef PRINT_DEBUG
@@ -291,7 +291,7 @@ int zslDelete(zskiplist *zsl, double score, const char* ele, zskiplistNode **nod
     /* We may have multiple elements with the same score, what we need
      * is to find the element with both the right score and object. */
     if (x->level[0].forward ){
-        forward = (zskiplistNode *)void_ptr(x->level[0].forward);
+        forward = ZSL_NODE(x->level[0].forward);
          #ifdef PRINT_DEBUG
         printf("[DEBUG] zslDelete, score:%f, forward->score:%f, ele:%s. forward->ele:%s\n", score, forward->score,ele, (char*)void_ptr(forward->ele));
         #endif
@@ -326,4 +326,76 @@ int zslDelete(zskiplist *zsl, double score, const char* ele, zskiplistNode **nod
     //     return 1;
     // }
     // return 0; /* not found */
+}
+
+/* Update the score of an element inside the sorted set skiplist.
+ * Note that the element must exist and must match 'score'.
+ * This function does not update the score in the hash table side, the
+ * caller should take care of it.
+ *
+ * Note that this function attempts to just update the node, in case after
+ * the score update, the node would be exactly at the same position.
+ * Otherwise the skiplist is modified by removing and re-adding a new
+ * element, which is more costly.
+ *
+ * The function returns the updated element skiplist node pointer. */
+ps_ptr zslUpdateScore(zskiplist *zsl, double curscore, const char* ele, double newscore) {
+    zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x, *forward;
+    int i;
+    ps_ptr ps_x;
+
+    /* We need to seek to element to update to start: this is useful anyway,
+     * we'll have to update or remove it. */
+    ps_x = zsl->header;
+    x = ZSL_NODE(ps_x);
+    for (i = zsl->level-1; i >= 0; i--) {
+        // ps_forward = x->level[i].forward;
+        
+        while(x->level[i].forward){
+            forward = ZSL_NODE(x->level[i].forward);
+            if(forward->score >= curscore) break; 
+            if(forward->score == curscore && strcmp((char*)void_ptr(forward->ele),ele) >= 0 ) break;
+            
+            // ps_forward = forward->level[i].forward;
+            x = forward;
+        }
+        update[i] = x;
+        
+    }
+
+
+
+
+    /* Jump to our element: note that this function assumes that the
+     * element with the matching score exists. */
+    ps_x = x->level[0].forward;
+    x = ZSL_NODE(ps_x);
+    #ifdef PRINT_DEBUG
+    if(!(ps_x && curscore == x->score && strcmp((char*)void_ptr(x->ele),ele) == 0)){
+        printf("[ERROR]curscore:%f, x->score:%f, (char*)void_ptr(x->ele):%s,ele:%s\n",curscore,x->score,(char*)void_ptr(x->ele),ele);
+    }
+    #endif
+    assert(ps_x && curscore == x->score && strcmp((char*)void_ptr(x->ele),ele) == 0);
+
+    /* If the node, after the score update, would be still exactly
+     * at the same position, we can just update the score without
+     * actually removing and re-inserting the element in the skiplist. */
+    if ((x->backward == 0 || (ZSL_NODE(x->backward))->score < newscore) &&
+        (x->level[0].forward == 0 || (ZSL_NODE(x->level[0].forward))->score > newscore))
+    {
+        x->score = newscore;
+        return ps_x;
+    }
+
+    /* No way to reuse the old node: we need to remove and insert a new
+     * one at a different place. */
+    zslDeleteNode(zsl, ps_x, update);
+    #ifdef PRINT_DEBUG
+    printf("[DEBUG] zslUpdateScore, insert new node ele:%s\n", (char*)void_ptr(x->ele));
+    #endif
+    ps_ptr ps_new_node = zslInsert(zsl,newscore,(char*)void_ptr(x->ele));
+    /* We reused the old node x->ele SDS string, free the node now
+     * since zslInsert created a new one. */
+    zslFreeNode(ps_x);
+    return ps_new_node;
 }
