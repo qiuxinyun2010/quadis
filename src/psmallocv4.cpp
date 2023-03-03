@@ -126,7 +126,7 @@ ps_ptr psmalloc(size_t size, int page_type, int set_zero) {
     page* pg = pm->page_index[PAGE_ID(pm->free_list[idx])];
 
     if(!pg->is_mapped) {
-        printf("[DEBUG] page: is not mapped\n", PAGE_HEAD->page_id);
+        printf("[DEBUG] page: is not mapped:%u\n", PAGE_HEAD->page_id);
         if(map_page(pg, pg->path)==-1){
             return 0;
         }
@@ -291,7 +291,7 @@ static inline void extend_page_index() {
     if(pm->cur_page_id >= pm->max_page_id){
         // extend_page_index();
         #ifdef PRINT_DEBUG
-        printf("[DEBUG] extend max page id from %d to %d\n", pm->max_page_id, pm->cur_page_id*2);
+        printf("[DEBUG] extend max page id from %lu to %lu\n", pm->max_page_id, pm->cur_page_id*2);
         #endif
         pm->max_page_id = pm->cur_page_id*2;
         pm->page_index = (page**)realloc(pm->page_index,pm->max_page_id * sizeof(page*));

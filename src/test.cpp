@@ -3,6 +3,7 @@
 #include <sys/time.h>
 #include "dict.h"
 #include "util.h"
+#include "skiplist.h"
 
 long long timeInMilliseconds(void) {
     struct timeval tv;
@@ -24,8 +25,12 @@ void test_dict_add2();
 void test_dict_find();
 void test_dict_random();
 void test_dict_deladd();
-void test_dict_release();
+void test_dict_release() ;
+void test_zsl_create_and_release();
+void test_zsl_insert_delete();
+void test_zsl_create();
 int main() {
+    printf("init page ok:%d\n",init_page_manager("test.entry"));
     // page* pg = (page*)calloc(1,sizeof(page));
     // printf("size of page : %d\n", sizeof(page));
     // intptr_t x = PAGE_PTR(1,2);
@@ -47,14 +52,73 @@ int main() {
     // test_dict_find();
     // test_dict_random();
 
+    
+    test_zsl_insert_delete();
+
+}
+void test_zsl_insert_delete() {
+    zskiplist* zsl = zslLoad("zsl.meta");
+    ps_ptr ps_s1, ps_zn;
+    long count = 1000000;
+    start_benchmark();
+    for(int i=0;i<count;i++){
+        ps_s1 = ps_stringFromLongLong(i+1);
+        ps_zn = zslInsert(zsl,i+1,ps_s1);
+        // zslDelete(zsl,i+1,stringFromLongLong(i+1),NULL);
+    }
+
+    printf("header:%lu %lu, length:%ld, level:%d\n",PAGE_ID(zsl->header),PAGE_OFFSET(zsl->header),zsl->length,zsl->level);
+    for(int i=0;i<count;i++){
+        
+        zslDelete(zsl,i+1,stringFromLongLong(i+1),NULL);
+    }
+    
+
+    // printf("header:%lu %lu, length:%ld, level:%d\n",PAGE_ID(zsl->header),PAGE_OFFSET(zsl->header),zsl->length,zsl->level);
+    // for(int i=0;i<count;i++){
+    //     ps_s1 = ps_stringFromLongLong(i+1);
+    //     ps_zn = zslInsert(zsl,i+1,ps_s1);
+    // }
+    end_benchmark("Insert -> delete");
+    
+}
+void test_zsl_create_and_release(){
+    printf("size of zsl:%lu, size of zslnode:%lu\n",sizeof(zskiplist), sizeof(zskiplistNode));
+
+    zskiplist* zsl = zslLoad("zsl.meta");
+    // printf("ps_zsl:%lu %lu\n",PAGE_ID(ps_zsl),PAGE_OFFSET(ps_zsl));
+    // zskiplist* zsl = (zskiplist*)void_ptr(ps_zsl);
+    printf("header:%lu %lu, length:%ld, level:%d\n",PAGE_ID(zsl->header),PAGE_OFFSET(zsl->header),zsl->length,zsl->level);
+    zskiplistNode* header = (zskiplistNode*)void_ptr(zsl->header);
+    printf("size of header:%lu\n", sizeof(*header));
+
+    // zslFree(ps_zsl);
+
+    // ps_zsl = zslCreate();
+    // printf("ps_zsl:%lu %lu\n",PAGE_ID(ps_zsl),PAGE_OFFSET(ps_zsl));
+    // zsl = (zskiplist*)void_ptr(ps_zsl);
+    // printf("header:%lu %lu, length:%ld, level:%d\n",PAGE_ID(zsl->header),PAGE_OFFSET(zsl->header),zsl->length,zsl->level);
+
+    ps_ptr ps_s1;
+    // zskiplistNode* zn ;
+    ps_ptr ps_zn;
+    start_benchmark();
+    long count = 10;
+    for(int i=0;i<count;i++){
+        ps_s1 = ps_stringFromLongLong(i+1);
+        ps_zn = zslInsert(zsl,i+1,ps_s1);
+        zslFreeNode(ps_zn);
+    }
+    end_benchmark("Inserting");
+    printf("header:%lu %lu, length:%ld, level:%d\n",PAGE_ID(zsl->header),PAGE_OFFSET(zsl->header),zsl->length,zsl->level);
+
 }
 void test_dict_release() {
     #ifdef PRINT_DEBUG
     #undef PRINT_DEBUG
     #endif
-    printf("init page ok:%d\n",init_page_manager("test.entry"));
     dict* d = dictLoad("test.meta");
-    long count = 100000;
+    long count = 100;
     start_benchmark();
     for (int j = 0; j < count; j++) {
         ps_ptr ps_str = ps_stringFromLongLong(j);
@@ -85,7 +149,7 @@ void test_dict_release() {
     printf("ht_size_exp[1]:%d, ht_table[1]:%lu %lu, rehashidx:%ld,ht_used:%lu\n", d->ht_size_exp[1],PAGE_ID(d->ht_table[1]),PAGE_OFFSET(d->ht_table[1]), d->rehashidx,d->ht_used[1]);
 }
 void test_dict_deladd() {
-    printf("init page ok:%d\n",init_page_manager("test.entry"));
+
     dict* d = dictLoad("test.meta");
     d->direct_val =1;
     printf("direct_val:%d\n",d->direct_val);
@@ -105,6 +169,19 @@ void test_dict_deladd() {
 
 
     }
+    for (int j = 0; j < count; j++) {
+        ps_ptr ps_str = ps_stringFromLongLong(j);
+        ps_ptr ps_v = ps_stringFromLongLong(j+100);
+        retval = dictAdd(d,ps_str,ps_v);
+        if(retval != DICT_OK) psfree(ps_str);
+        assert(retval == DICT_OK);
+
+        // char *key = stringFromLongLong(j);
+        // retval = dictDelete(d,key);
+        // assert(retval == DICT_OK);
+
+
+    }
     end_benchmark("Removing and adding");
     printf("dictSize:%lu\n",dictSize(d));
     // assert(dictSize(d) == 0);
@@ -112,7 +189,7 @@ void test_dict_deladd() {
     printf("ht_size_exp[1]:%d, ht_table[1]:%lu %lu, rehashidx:%ld,ht_used:%lu\n", d->ht_size_exp[1],PAGE_ID(d->ht_table[1]),PAGE_OFFSET(d->ht_table[1]), d->rehashidx,d->ht_used[1]);
 }
 void test_dict_random() {
-    printf("init page ok:%d\n",init_page_manager("test.entry"));
+
     dict* d = dictLoad("test.meta");
     printf("ht_size_exp[0]:%d, ht_table[0]:%lu %lu, rehashidx:%ld,ht_used:%lu\n, ", d->ht_size_exp[0],PAGE_ID(d->ht_table[0]), PAGE_OFFSET(d->ht_table[0]),d->rehashidx,d->ht_used[0]);
     printf("ht_size_exp[1]:%d, ht_table[1]:%lu %lu, rehashidx:%ld,ht_used:%lu\n", d->ht_size_exp[1],PAGE_ID(d->ht_table[1]),PAGE_OFFSET(d->ht_table[1]), d->rehashidx,d->ht_used[1]);
@@ -127,7 +204,7 @@ void test_dict_random() {
     end_benchmark("Accessing random keys");
 }
 void test_dict_find() {
-    printf("init page ok:%d\n",init_page_manager("test.entry"));
+
     dict* d = dictLoad("test.meta");
     printf("ht_size_exp[0]:%d, ht_table[0]:%lu %lu, rehashidx:%ld,ht_used:%lu\n, ", d->ht_size_exp[0],PAGE_ID(d->ht_table[0]), PAGE_OFFSET(d->ht_table[0]),d->rehashidx,d->ht_used[0]);
     printf("ht_size_exp[1]:%d, ht_table[1]:%lu %lu, rehashidx:%ld,ht_used:%lu\n", d->ht_size_exp[1],PAGE_ID(d->ht_table[1]),PAGE_OFFSET(d->ht_table[1]), d->rehashidx,d->ht_used[1]);
@@ -180,7 +257,7 @@ void test_dict_add2() {
     #ifdef PRINT_DEBUG
     #undef PRINT_DEBUG
     #endif
-    printf("init page ok:%d\n",init_page_manager("test.entry"));
+
     dict* d = dictLoad("test.meta");
     long count = 100;
     start_benchmark();
@@ -196,7 +273,7 @@ void test_dict_add2() {
     printf("ht_size_exp[1]:%d, ht_table[1]:%lu %lu, rehashidx:%ld,ht_used:%lu\n", d->ht_size_exp[1],PAGE_ID(d->ht_table[1]),PAGE_OFFSET(d->ht_table[1]), d->rehashidx,d->ht_used[1]);
 }
 void test_dict_add() {
-    printf("init page ok:%d\n",init_page_manager("test.entry"));
+
     dict* d = dictLoad("test.meta");
     // printf("hash_idx:%d\n", d->rehashidx);
     // printf("dictExpand:%d\n",dictExpand(d, 4));
@@ -218,7 +295,7 @@ void test_dict_add() {
     printf("key:%s v:%s\n",(char*)void_ptr(de->key), (char*)void_ptr(de->v.val));
 }
 void test_psmalloc_2() {
-     printf("init page ok:%d\n",init_page_manager("test.entry"));
+
      ps_ptr pp = psmalloc(2000);
      char* p = (char*)void_ptr(pp);
      for(int i=0;i<9;i++){
@@ -227,7 +304,7 @@ void test_psmalloc_2() {
     //  psfree(pp);
 }
 void test_psmalloc_1() {
-    printf("init page ok:%d\n",init_page_manager("test.entry"));
+
     long count = 10;
     start_benchmark();
     char* p;

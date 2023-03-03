@@ -7,3 +7,9 @@ Accessing random keys: 1000000 items in 367 ms
 Accessing missing: 1000000 items in 541 ms
 Removing and adding: 1000000 items in 707 ms
 ```
+
+## SkipList benchmark
+```
+Insert: 1000000 items in 2314 ms
+Insert -> delete: 1000000 items in 663 ms
+```

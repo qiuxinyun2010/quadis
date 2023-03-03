@@ -119,6 +119,7 @@ static dict* _dictCreate(const char* dict_name) {
 
     dict* d = (dict*)void_ptr(pptr);
     _dictInit(d);
+    munmap(meta,sizeof(dictMeta));
     return d;
 }
 
@@ -364,7 +365,7 @@ int dictRehash(dict *d, int n) {
     /* Check if we already rehashed the whole table... */
     if (d->ht_used[0] == 0) {
         #ifdef PRINT_DEBUG
-            printf("[DEBUG] free old ht_table:%d %d\n", PAGE_ID(d->ht_table[0]), PAGE_OFFSET(d->ht_table[0]));
+            printf("[DEBUG] free old ht_table:%ld %ld\n", PAGE_ID(d->ht_table[0]), PAGE_OFFSET(d->ht_table[0]));
         #endif
         psfree(d->ht_table[0]);
         /* Copy the new ht onto the old one */
@@ -510,7 +511,7 @@ static dictEntry *dictGenericDelete(dict *d, const void *key, int nofree) {
                 if (!nofree) {
                     dictFreeUnlinkedEntry(d, he);
                     #ifdef PRINT_DEBUG
-                    printf("[DEBUG] dictCompareKeys , page_id:%d, page_offset:%d\n",PAGE_ID(ps_he),PAGE_OFFSET(ps_he));
+                    printf("[DEBUG] dictCompareKeys , page_id:%ld, page_offset:%ld\n",PAGE_ID(ps_he),PAGE_OFFSET(ps_he));
                     #endif
                     psfree(ps_he);
                 }

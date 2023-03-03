@@ -21,7 +21,7 @@ void* create_and_map(const char* file_path, size_t page_size) {
     }
 
     ftruncate(fd,page_size);
-    printf("[DEBUG] create_and_map page, filepath: %s, page size: %d\n", file_path, page_size);
+    printf("[DEBUG] create_and_map page, filepath: %s, page size: %ld\n", file_path, page_size);
 
     void* ptr = mmap(NULL, page_size, PROT_READ | PROT_WRITE,MAP_SHARED, fd, 0);
     // printf("%p\n",ptr);

@@ -1,11 +1,9 @@
+#pragma once
+
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include "redisassert.h"
-
-#ifndef PSMALLOC
-#define PSMALLOC
-#endif
 
 #define MAX_PATH 200
 
@@ -89,5 +87,5 @@ public:
 ps_ptr psmalloc(size_t size);
 ps_ptr psmalloc(size_t size, int page_type, int set_zero);
 ps_ptr pscalloc(size_t size);
-void psfree(ps_ptr ptr);
-inline void* void_ptr(ps_ptr ptr);
+void   psfree(ps_ptr ptr);
+void*  void_ptr(ps_ptr ptr);

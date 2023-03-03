@@ -1,12 +1,9 @@
 #ifndef __DICT_H
 #define __DICT_H
-#endif
+
 
 #include <stdint.h>
-#ifndef PSMALLOC
-#define PSMALLOC
 #include "psmallocv4.h"
-#endif
 
 #define META_SUFFIX "meta"
 #define DICT_OK 0
@@ -88,3 +85,5 @@ dictEntry *dictFind(dict *d, const void *key);
 dictEntry *dictGetRandomKey(dict *d);
 int dictDelete(dict *ht, const void *key);
 void dictRelease(dict *d);
+
+#endif

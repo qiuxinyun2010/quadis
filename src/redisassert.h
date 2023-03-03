@@ -35,6 +35,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef __REDIS_ASSERT_H
+#define __REDIS_ASSERT_H
 
 #if __GNUC__ >= 3
     #define likely(x) __builtin_expect(!!(x), 1)
@@ -58,3 +60,4 @@ void serverPanic(const char *file, int line, const char *msg, ...);
 }
 #endif
 
+#endif

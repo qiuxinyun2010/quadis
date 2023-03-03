@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 3.0)
 project(psmallocv3)
 add_definitions(-DREDIS_TEST)
+# add_definitions(-DPRINT_DEBUG)
 include_directories(include src)
-add_executable(test mt19937-64.c redisassert.c siphash.cpp  util.cpp  dict.cpp psmallocv4.cpp test.cpp)
+add_executable(test mt19937-64.c redisassert.c siphash.cpp  util.cpp  skiplist.cpp dict.cpp psmallocv4.cpp test.cpp)
 # add_executable(main src/psmalloc.cpp src/main.cpp)

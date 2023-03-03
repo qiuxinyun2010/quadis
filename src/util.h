@@ -1,9 +1,8 @@
-#include <stddef.h>
+#ifndef __UTIL_H
+#define __UTIL_H
 
-#ifndef PSMALLOC
-#define PSMALLOC
+#include <stddef.h>
 #include "psmallocv4.h"
-#endif
 
 /* API */
 #ifdef __cplusplus  
@@ -18,4 +17,6 @@ ps_ptr ps_stringFromLongLong(long long value);
 char *stringFromLongLong(long long value);
 #ifdef __cplusplus  
 }
+#endif
+
 #endif
