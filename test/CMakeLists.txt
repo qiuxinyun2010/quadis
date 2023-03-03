@@ -1,0 +1,8 @@
+cmake_minimum_required (VERSION 3.0)
+project(test)
+if(TEST1)
+    add_definitions(-DREDIS_TEST)
+endif()
+include_directories(include src)
+add_executable(test src/mt19937-64.c src/redisassert.c src/siphash.c src/dict.c test.c)
+# add_executable(main src/psmalloc.cpp src/main.cpp)

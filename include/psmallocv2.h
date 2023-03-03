@@ -50,9 +50,6 @@ public:
         // page_index = new page*(DEFAULT_MAX_PAGE_ID);
         // page_index =  std::make_unique<page*>(malloc(DEFAULT_MAX_PAGE_ID * sizeof(page)));
         page_index = (page**)calloc(DEFAULT_MAX_PAGE_ID , sizeof(page*));
-        for(int i=0;i<DEFAULT_MAX_PAGE_ID;i++){
-            page_index[i] = nullptr;
-        }
 
         if (init()==C_PAGE_INIT_ERR){
             clear();

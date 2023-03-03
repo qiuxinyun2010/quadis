@@ -35,6 +35,18 @@
         "cerrno": "cpp",
         "ios": "cpp",
         "memory": "cpp",
-        "bit": "cpp"
+        "bit": "cpp",
+        "time.h": "c",
+        "siphash.c": "cpp",
+        "stdlib.h": "c",
+        "stdio.h": "c",
+        "limits.h": "c",
+        "dict.h": "c",
+        "redisassert.h": "c",
+        "mt19937-64.h": "c",
+        "signal.h": "c",
+        "testhelp.h": "c",
+        "stat.h": "c",
+        "mman.h": "c"
     }
 }

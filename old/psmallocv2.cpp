@@ -4,14 +4,8 @@
 #include <sys/mman.h> 
 #include <unistd.h>
 // #include <stdlib.h>
-static inline size_t get_file_size(const char* file_path)
-{
-    struct stat st;
-    memset(&st, 0, sizeof(st));
-    stat(file_path, &st);
-    return st.st_size;
-}
-int get_chunk_size_index(int chunk_size) {
+#include "util.c
+int get_chunk_type(int chunk_size) {
   if (chunk_size == 16)
     return 0;
   else if (chunk_size == 32)
@@ -211,7 +205,7 @@ int Allocator::init(){
         
 
         /*link chunks*/
-        int idx = get_chunk_size_index(pg->ph->chunk_size);
+        int idx = get_chunk_type(pg->ph->chunk_size);
         pg->next = page_list[idx];
         page_list[idx] = pg;
     }
@@ -237,7 +231,7 @@ void Allocator::clear(){
 
 static int get_chunk_size(int size) {
   int chunk_size = MIN_MALLOC_SIZE;
-  while (chunk_size <= MAX_MALLOC_SIZE) {
+  while (chunk_size <= MAX_CHUNK_SIZE) {
     if (size <= chunk_size) return chunk_size;
     chunk_size *= 2;
   }
@@ -247,11 +241,11 @@ static int get_chunk_size(int size) {
 #define PAGE_HEAD pg->ph
 void* Allocator::psmalloc(size_t size){
     int chunk_size = get_chunk_size(size);
-    if(size > MAX_MALLOC_SIZE){
-        printf("MALLOC size > MAX_MALLOC_SIZE:%d",MAX_MALLOC_SIZE);
+    if(size > MAX_CHUNK_SIZE){
+        printf("MALLOC size > MAX_MALLOC_SIZE:%d",MAX_CHUNK_SIZE);
         return nullptr;
     }
-    int idx = get_chunk_size_index(chunk_size);
+    int idx = get_chunk_type(chunk_size);
 
     page* pg = page_list[idx];
 
