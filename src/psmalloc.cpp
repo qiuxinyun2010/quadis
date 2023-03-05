@@ -4,7 +4,7 @@
 #include <sys/mman.h> 
 #include <unistd.h>
 #include <dirent.h>
-#include "psmallocv4.h"
+#include "psmalloc.h"
 #include "util.h"
 
 
@@ -26,7 +26,6 @@ static page_head* resize_page(page* pg);
 static page_head* _resize_page(page* pg, int new_size);
 static int map_page(page* pg, const char* filepath);
 static int _map_page(page* pg, const char* filepath, int fd);
-// static inline size_t get_file_size(const char* file_path);
 static inline void extend_page_index(); 
 static void write_line_to_file(const char* path, const char* line);
 
@@ -35,12 +34,10 @@ inline void* void_ptr(ps_ptr ptr)  {
 
     assert(pm!=nullptr);
     assert(ptr!=0);
-    // if(!pm) return nullptr;
-    // printf("get void*, page_id:%d, offset:%d\n", this->page_id, this->offset);
+
     if(!pm->page_index[ptr>>PAGE_OFFSET_BITS]){
         printf("[ERROR] pageid:%lu, offset:%lu\n", PAGE_ID(ptr), PAGE_OFFSET(ptr));
         panic("Page is not existed\n");
-        // return nullptr 
     }
 
     page* pg = pm->page_index[ptr>>PAGE_OFFSET_BITS];
@@ -51,7 +48,7 @@ inline void* void_ptr(ps_ptr ptr)  {
         }
     }
     return (char*)pg->ph + PAGE_OFFSET(ptr);
-    // return nullptr;
+
 }
 
 /*API*/
@@ -82,9 +79,8 @@ ps_ptr psmalloc(size_t size, int page_type, int set_zero) {
         page* new_pg = new page(new_page_head, new_page_path);
         new_pg->is_mapped = true;
         pm->page_index[new_pg->ph->page_id] = new_pg;
-        // printf("[DEBUG]: create new page, %s\n",new_pg->path);
+
         return PAGE_PTR(pm->cur_page_id, sizeof(page_head));
-        // return {pm->cur_page_id, sizeof(page_head)};
     }
 
     int chunk_size = get_chunk_size(size);
@@ -135,7 +131,6 @@ ps_ptr psmalloc(size_t size, int page_type, int set_zero) {
     void* vp = void_ptr(p);
     pm->free_list[idx] = *(ps_ptr*)vp;
 
-    // pm->free_list[idx] = (ps_ptr)void_ptr(p);
     if(set_zero) {
         memset(vp,0,size);
     }
@@ -236,7 +231,6 @@ int page_manager::init(const char* page_entry_name) {
         page pg;
         map_page(&pg, file_path);
         ph = pg.ph;
-        // printf("File exists\n");
     }
     pm->free_list = (ps_ptr*)(ph+1);
     #ifdef PRINT_DEBUG
@@ -281,7 +275,6 @@ static void write_line_to_file(const char* path, const char* line){
     if(fp == NULL) {
         perror("can not open the file\n.");
         return;
-        // return C_PAGE_INIT_ERR;
     }
     fprintf(fp,"%s\n",line);
     fclose(fp);
@@ -340,7 +333,8 @@ static page_head* _create_page(const char* filepath, int chunk_size, int page_id
         *(intptr_t*)(chunk_current+(intptr_t)ph) = PAGE_PTR(page_id, chunk_next);
         chunk_current += chunk_size;
         chunk_next += chunk_size;
-    }                        
+    }                   
+
     // set offset zero to the laskchunk
     *(intptr_t*)(chunk_current+(intptr_t)ph) = 0;
     
@@ -366,15 +360,11 @@ static int _map_page(page* pg, const char* filepath, size_t page_size, int fd)
 
     if(ph->magic!=PAGE_MAGIC){
         panic("page magic error\n");
-        // return -1;
     }
 
     if(page_size != ph->page_size)
     {
         panic("page size error\n");
-        // printf("ERROR: page size not equal, %s\n",filepath);
-        // munmap(ph,page_size);
-        // return -1;
     }
     pg->ph = ph;
     pg->is_mapped = 1;
@@ -403,6 +393,7 @@ static page_head* _resize_page(page* pg, int new_size){
     
     page_head* ph = (page_head*)mmap(NULL, new_size, PROT_READ | PROT_WRITE,MAP_SHARED, fd, 0);
     if(ph == MAP_FAILED){
+
         //TODO: 内存不足时，page回收策略
         perror("MAP_FAILED: ");
         close(fd);
@@ -411,7 +402,6 @@ static page_head* _resize_page(page* pg, int new_size){
     close(fd);
 
     ph->page_size =new_size;
-    // ph->next_free_ptr = old_size;
     int chunk_size = ph->chunk_size;
 
     intptr_t chunk_current = old_size;

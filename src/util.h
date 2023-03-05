@@ -2,7 +2,7 @@
 #define __UTIL_H
 
 #include <stddef.h>
-#include "psmallocv4.h"
+#include "psmalloc.h"
 
 /* API */
 #ifdef __cplusplus  

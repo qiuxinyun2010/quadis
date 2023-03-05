@@ -47,6 +47,8 @@
         "signal.h": "c",
         "testhelp.h": "c",
         "stat.h": "c",
-        "mman.h": "c"
+        "mman.h": "c",
+        "cstring": "cpp",
+        "cassert": "cpp"
     }
 }

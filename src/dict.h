@@ -3,7 +3,7 @@
 
 
 #include <stdint.h>
-#include "psmallocv4.h"
+#include "psmalloc.h"
 
 #define META_SUFFIX "meta"
 #define DICT_OK 0
@@ -75,9 +75,7 @@ struct dict {
 };
 
 dict *dictLoad(const char* path);
-// int dictAdd(dict *d, void *key, void *val);
 int dictAdd(dict *d, ps_ptr key, ps_ptr val);
-// dictEntry *dictAddRaw(dict *d, void *key, dictEntry **existing);
 dictEntry *dictAddRaw(dict *d, ps_ptr key, dictEntry **existing);
 int dictExpand(dict *d, unsigned long size);
 int dictRehash(dict *d, int n);

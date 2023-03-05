@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -25,24 +27,14 @@
 #define page_nullptr {0,0}
 #define PAGE_SUFFIX "pg"
 
-typedef struct page_ptr {
+#define PAGE_OFFSET_BITS 32
+#define PAGE_OFFSET_MASK 0xFFFF
+#define PAGE_OFFSET(x) (x & 0xFFFF)
+#define PAGE_ID(x) (x >> PAGE_OFFSET_BITS)
+#define PAGE_PTR(x,y) (((intptr_t)x<<PAGE_OFFSET_BITS)+ y)
 
-    uint32_t page_id;
-    uint32_t offset;
-
-    page_ptr():page_id(0),offset(0){}
-    page_ptr(uint32_t _page_id, uint32_t _offset): page_id(_page_id), offset(_offset){}
-    page_ptr(intptr_t x);
-    ~page_ptr(){}
-    bool is_null() { return page_id==0;}
-    void* ptr();
-    operator void*() const;
-    operator intptr_t() const;
-    // operator intptr_t*() const{
-    //     return (intptr_t*)(operator void *)();
-    // }
-    // void* operator*(){return nullptr;}
-} page_ptr;
+/*pageid:32 offset:32*/
+typedef uint64_t ps_ptr;
 
 typedef struct page_head {
     int16_t magic;
@@ -50,7 +42,6 @@ typedef struct page_head {
     uint32_t page_type;
     uint32_t page_size;
     uint32_t page_id;
-    // page_ptr next_free_ptr;
 } page_head;
 
 
@@ -80,19 +71,19 @@ public:
 private:
     page_manager(){}
     ~page_manager(){}
-    // static inline void extend_page_index();
-    // page_head* create_page(const char* filepath, int chunk_size);
 public:
     static page_manager* pm;
     size_t cur_page_id;
     size_t max_page_id;
     // char*  page_entry_path;
     page** page_index;
-    page_ptr* free_list;
+    ps_ptr* free_list;
 };
 
 /* API */
 #define init_page_manager(x) page_manager::init(x)
-page_ptr psmalloc(size_t size);
-page_ptr psmalloc(size_t size, int page_type);
-void psfree(page_ptr ptr);
+ps_ptr psmalloc(size_t size);
+ps_ptr psmalloc(size_t size, int page_type, int set_zero);
+ps_ptr pscalloc(size_t size);
+void   psfree(ps_ptr ptr);
+void*  void_ptr(ps_ptr ptr);

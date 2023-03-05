@@ -1,14 +1,17 @@
 #include "skiplist.h"
 #include <math.h>
+
 #ifdef PRINT_DEBUG
 #include <stdio.h> 
 #endif
+
 #include "util.h"
 #include <sys/mman.h> 
 #include <fcntl.h>
 #include <unistd.h> 
 
 #define ZSL_NODE(x) (zskiplistNode *)void_ptr(x)
+
 /* Create a skiplist node with the specified number of levels.
  * The SDS string 'ele' is referenced by the node after the call. */
 ps_ptr zslCreateNode(int level, double score, const char* ele) {
@@ -316,16 +319,6 @@ int zslDelete(zskiplist *zsl, double score, const char* ele, zskiplistNode **nod
 
     }
     return 0;/* not found */
-    // x = x->level[0].forward;
-    // if (x && score == x->score && sdscmp(x->ele,ele) == 0) {
-    //     zslDeleteNode(zsl, x, update);
-    //     if (!node)
-    //         zslFreeNode(x);
-    //     else
-    //         *node = x;
-    //     return 1;
-    // }
-    // return 0; /* not found */
 }
 
 /* Update the score of an element inside the sorted set skiplist.
@@ -394,8 +387,89 @@ ps_ptr zslUpdateScore(zskiplist *zsl, double curscore, const char* ele, double n
     printf("[DEBUG] zslUpdateScore, insert new node ele:%s\n", (char*)void_ptr(x->ele));
     #endif
     ps_ptr ps_new_node = zslInsert(zsl,newscore,(char*)void_ptr(x->ele));
-    /* We reused the old node x->ele SDS string, free the node now
-     * since zslInsert created a new one. */
+
     zslFreeNode(ps_x);
     return ps_new_node;
+}
+
+int zslValueGteMin(double value, zrangespec *spec) {
+    return spec->minex ? (value > spec->min) : (value >= spec->min);
+}
+
+int zslValueLteMax(double value, zrangespec *spec) {
+    return spec->maxex ? (value < spec->max) : (value <= spec->max);
+}
+
+/* Returns if there is a part of the zset is in range. */
+int zslIsInRange(zskiplist *zsl, zrangespec *range) {
+    zskiplistNode *x;
+
+    /* Test for ranges that will always be empty. */
+    if (range->min > range->max ||
+            (range->min == range->max && (range->minex || range->maxex)))
+        return 0;
+    x = ZSL_NODE(zsl->tail);
+    if (x == NULL || !zslValueGteMin(x->score,range))
+        return 0;
+    x = ZSL_NODE((ZSL_NODE(zsl->header))->level[0].forward);
+    if (x == NULL || !zslValueLteMax(x->score,range))
+        return 0;
+    return 1;
+}
+
+/* Find the first node that is contained in the specified range.
+ * Returns NULL when no element is contained in the range. */
+ps_ptr zslFirstInRange(zskiplist *zsl, zrangespec *range) {
+    zskiplistNode *x, *forward;
+    int i;
+
+    /* If everything is out of range, return early. */
+    if (!zslIsInRange(zsl,range)) return 0;
+
+    x = ZSL_NODE(zsl->header);
+    for (i = zsl->level-1; i >= 0; i--) {
+        /* Go forward while *OUT* of range. */
+        while(x->level[i].forward) {
+            forward = ZSL_NODE(x->level[i].forward);
+            if(zslValueGteMin(forward->score,range)) break;
+            x = forward;
+        }
+    }
+
+    /* This is an inner range, so the next node cannot be NULL. */
+    assert(x->level[0].forward != 0);
+    
+    /* Check if score <= max. */
+    if (!zslValueLteMax(forward->score,range)) return 0;
+    return x->level[0].forward;
+}
+
+/* Find the last node that is contained in the specified range.
+ * Returns NULL when no element is contained in the range. */
+ps_ptr zslLastInRange(zskiplist *zsl, zrangespec *range) {
+    zskiplistNode *x, *forward;
+    ps_ptr ps_x;
+    int i;
+
+    /* If everything is out of range, return early. */
+    if (!zslIsInRange(zsl,range)) return 0;
+    ps_x = zsl->header;
+    x = ZSL_NODE(zsl->header);
+    for (i = zsl->level-1; i >= 0; i--) {
+        /* Go forward while *OUT* of range. */
+        while(x->level[i].forward) {
+            forward = ZSL_NODE(x->level[i].forward);
+            if(!zslValueLteMax(forward->score,range)) {
+                break;
+            }
+            ps_x = x->level[i].forward;
+            x = forward;
+        }
+    }
+
+    /* This is an inner range, so this node cannot be NULL. */
+    assert(ps_x != 0);
+    /* Check if score >= min. */
+    if (!zslValueGteMin(x->score,range)) return 0;
+    return ps_x;
 }

@@ -30,8 +30,11 @@ void test_zsl_create_and_release();
 void test_zsl_insert_delete();
 void test_zsl_create();
 void test_zsl_update_score();
+void test_zslFirstInRange();
+void test_bson_main();
 int main() {
-    printf("init page ok:%d\n",init_page_manager("test.entry"));
+    // printf("init page ok:%d\n",init_page_manager("test.entry"));
+
     // page* pg = (page*)calloc(1,sizeof(page));
     // printf("size of page : %d\n", sizeof(page));
     // intptr_t x = PAGE_PTR(1,2);
@@ -54,14 +57,27 @@ int main() {
     // test_dict_random();
 
     
-    test_zsl_update_score();
-
+    // test_zsl_update_score();
+    // test_zslFirstInRange();
+    test_bson_main();
+}
+void test_zslFirstInRange() {
+    zskiplist* zsl = zslLoad("zsl.meta");
+    zrangespec spec;
+    spec.max = 109;
+    spec.min = 103;
+    spec.minex = 1;
+    spec.maxex = 1;
+    ps_ptr ps_zn = zslFirstInRange(zsl,&spec);
+    printf("score:%f\n",((zskiplistNode *)void_ptr(ps_zn))->score);
+    ps_zn = zslLastInRange(zsl,&spec);
+    printf("score:%f\n",((zskiplistNode *)void_ptr(ps_zn))->score);
 }
 void test_zsl_update_score(){
     zskiplist* zsl = zslLoad("zsl.meta");
     ps_ptr ps_zn;
     char* s;
-    long count = 1000;
+    long count = 10;
     start_benchmark();
     for(int i=0;i<count;i++){
         s = stringFromLongLong(i+1);
@@ -71,7 +87,7 @@ void test_zsl_update_score(){
 
     printf("header:%lu %lu, length:%ld, level:%d\n",PAGE_ID(zsl->header),PAGE_OFFSET(zsl->header),zsl->length,zsl->level);
     for(int i=0;i<count;i++){      
-        zslUpdateScore(zsl,i+1,stringFromLongLong(i+1),i+1001);
+        zslUpdateScore(zsl,i+1,stringFromLongLong(i+1),i+101);
     }
     
     end_benchmark("Update score");

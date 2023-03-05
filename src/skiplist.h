@@ -43,6 +43,11 @@ typedef struct zsetMeta {
     ps_ptr zsl_entry;
 } zsetMeta;
 
+/* Struct to hold an inclusive/exclusive range spec by score comparison. */
+typedef struct {
+    double min, max;
+    int minex, maxex; /* are min or max exclusive? */
+} zrangespec;
 
 ps_ptr zslCreateNode(int level, double score, ps_ptr ele);
 // ps_ptr zslCreate(void);
@@ -54,4 +59,6 @@ ps_ptr zslInsert(ps_ptr ps_zsl, double score, const char* ele);
 ps_ptr zslInsert(zskiplist *zsl, double score, const char* ele);
 int zslDelete(zskiplist *zsl, double score, const char* ele, zskiplistNode **node);
 ps_ptr zslUpdateScore(zskiplist *zsl, double curscore, const char* ele, double newscore);
+ps_ptr zslFirstInRange(zskiplist *zsl, zrangespec *range);
+ps_ptr zslLastInRange(zskiplist *zsl, zrangespec *range);
 #endif
