@@ -49,6 +49,7 @@
         "stat.h": "c",
         "mman.h": "c",
         "cstring": "cpp",
-        "cassert": "cpp"
+        "cassert": "cpp",
+        "set": "cpp"
     }
 }
